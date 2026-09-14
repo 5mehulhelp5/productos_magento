@@ -72,8 +72,15 @@ with st.sidebar:
     else:
         st.error("Magento 2 API: Token no detectado ❌")
 
-    # Validar Google Sheets
-    sheets_ready = Config.get_service_account_path().exists() and bool(Config.GOOGLE_SHEET_ID)
+    # Validar Google Sheets (local o st.secrets)
+    has_sa_file = Config.get_service_account_path().exists()
+    has_sa_secret = False
+    try:
+        if "gcp_service_account" in st.secrets:
+            has_sa_secret = True
+    except Exception:
+        pass
+    sheets_ready = (has_sa_file or has_sa_secret) and bool(Config.GOOGLE_SHEET_ID)
     if sheets_ready:
         st.success("Google Sheets: Conectado ✅")
         st.caption(f"Hoja destino: **{Config.GOOGLE_WORKSHEET_NAME}**")

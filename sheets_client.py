@@ -1,11 +1,11 @@
 import os
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple, Optional
 import pandas as pd
 
 class GoogleSheetsClient:
-    def __init__(self, service_account_path: str, spreadsheet_id: str):
-        self.service_account_path = Path(service_account_path)
+    def __init__(self, service_account_path: Any, spreadsheet_id: str):
+        self.service_account_path = Path(service_account_path) if service_account_path else Path("service_account.json")
         self.spreadsheet_id = spreadsheet_id.strip()
         self.scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
@@ -14,21 +14,45 @@ class GoogleSheetsClient:
         self._gc = None
         self._spreadsheet = None
 
+    def _get_credentials(self) -> Tuple[Optional[Any], str]:
+        """Obtiene credenciales desde st.secrets (Streamlit Cloud) o archivo local."""
+        from google.oauth2.service_account import Credentials
+
+        # 1. Probar desde st.secrets de Streamlit Cloud
+        try:
+            import streamlit as st
+            if "gcp_service_account" in st.secrets:
+                info = dict(st.secrets["gcp_service_account"])
+                creds = Credentials.from_service_account_info(info, scopes=self.scopes)
+                return creds, info.get("client_email", "")
+        except Exception:
+            pass
+
+        # 2. Probar desde archivo local
+        if self.service_account_path.exists():
+            try:
+                creds = Credentials.from_service_account_file(
+                    str(self.service_account_path),
+                    scopes=self.scopes
+                )
+                return creds, creds.service_account_email
+            except Exception:
+                pass
+
+        return None, ""
+
     def validate_credentials_file(self) -> Dict[str, Any]:
-        """Comprueba si el archivo service_account.json existe y es legible."""
-        if not self.service_account_path.exists():
+        """Comprueba si existen credenciales válidas."""
+        creds, _ = self._get_credentials()
+        if creds is None:
             return {
                 "success": False,
-                "message": f"No se encontró el archivo de credenciales en: {self.service_account_path.name}"
+                "message": "No se encontraron credenciales de Google (ni en secrets ni en service_account.json)"
             }
-        return {"success": True, "message": "Archivo service_account.json detectado."}
+        return {"success": True, "message": "Credenciales de Google detectadas."}
 
     def connect(self) -> Dict[str, Any]:
         """Valida la conexión y permisos sobre la hoja de cálculo."""
-        val = self.validate_credentials_file()
-        if not val["success"]:
-            return val
-
         if not self.spreadsheet_id:
             return {
                 "success": False,
@@ -37,30 +61,25 @@ class GoogleSheetsClient:
 
         try:
             import gspread
-            from google.oauth2.service_account import Credentials
+            creds, client_email = self._get_credentials()
+            if creds is None:
+                return {
+                    "success": False,
+                    "message": "No se encontraron credenciales de Google Service Account."
+                }
 
-            creds = Credentials.from_service_account_file(
-                str(self.service_account_path),
-                scopes=self.scopes
-            )
             self._gc = gspread.authorize(creds)
             self._spreadsheet = self._gc.open_by_key(self.spreadsheet_id)
 
             return {
                 "success": True,
                 "title": self._spreadsheet.title,
-                "client_email": creds.service_account_email,
+                "client_email": client_email,
                 "message": f"Conectado exitosamente al Sheet: '{self._spreadsheet.title}'"
             }
         except Exception as e:
             err_str = str(e)
-            client_email = ""
-            try:
-                import json
-                with open(self.service_account_path, "r", encoding="utf-8") as f:
-                    client_email = json.load(f).get("client_email", "")
-            except Exception:
-                pass
+            _, client_email = self._get_credentials()
 
             if "PERMISSION_DENIED" in err_str or "403" in err_str or "The caller does not have permission" in err_str:
                 msg = (
@@ -81,7 +100,7 @@ class GoogleSheetsClient:
     def upload_dataframe(
         self,
         df: pd.DataFrame,
-        worksheet_name: str = "Productos_Magento"
+        worksheet_name: str = "Productos"
     ) -> Dict[str, Any]:
         """
         Sube un DataFrame completo a Google Sheets en una sola operación por lote (Batch).
@@ -95,15 +114,13 @@ class GoogleSheetsClient:
             try:
                 worksheet = self._spreadsheet.worksheet(worksheet_name)
             except Exception:
-                # Si no existe, crearla con filas y columnas suficientes
                 num_rows = max(len(df) + 100, 1000)
                 num_cols = max(len(df.columns) + 5, 20)
                 worksheet = self._spreadsheet.add_worksheet(title=worksheet_name, rows=num_rows, cols=num_cols)
 
-            # Preparar matriz de datos (reemplazando NaN y valores nulos)
+            # Preparar matriz de datos
             df_clean = df.fillna("")
             headers = df_clean.columns.tolist()
-            # Convertir todas las filas a tipos JSON serializables
             rows = df_clean.astype(str).values.tolist()
             data_matrix = [headers] + rows
 
