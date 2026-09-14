@@ -1,0 +1,25 @@
+# Credenciales y Secretos (CRÍTICO: NUNCA SUBIR A GITHUB)
+.env
+service_account.json
+*.json
+!requirements.txt
+
+# Datos locales y respaldos
+data/
+exports/
+*.parquet
+*.xlsx
+*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Entorno de desarrollo
+.agents/
+.idea/
+.vscode/
