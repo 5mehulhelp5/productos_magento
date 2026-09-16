@@ -80,10 +80,10 @@ Para evitar tener que consultar la API de Magento cada vez que un usuario abre o
 
 | Archivo | Responsabilidad |
 |---|---|
-| [`app.py`](file:///c:/Users/NOTEBOOK-%20CRISTHIAN/Desktop/Proyectos%20AUDITOR/productos_magento/app.py) | Interfaz visual en Streamlit con métricas, descripciones `(?)`, filtros y botones de subida/descarga. |
-| [`magento_client.py`](file:///c:/Users/NOTEBOOK-%20CRISTHIAN/Desktop/Proyectos%20AUDITOR/productos_magento/magento_client.py) | Cliente HTTP con concurrencia controlada (`ThreadPoolExecutor`) y paginación para `/products` y `/inventory/source-items`. |
-| [`data_processor.py`](file:///c:/Users/NOTEBOOK-%20CRISTHIAN/Desktop/Proyectos%20AUDITOR/productos_magento/data_processor.py) | Motor de cruce en memoria, ajuste de horario UTC-3, cálculo de `Habilitado_para_Venta` y persistencia en `data/`. |
-| [`sheets_client.py`](file:///c:/Users/NOTEBOOK-%20CRISTHIAN/Desktop/Proyectos%20AUDITOR/productos_magento/sheets_client.py) | Conexión y subida masiva en bloque (`batchUpdate`) con Google Sheets (soporta credenciales locales y de Streamlit Cloud). |
-| [`config.py`](file:///c:/Users/NOTEBOOK-%20CRISTHIAN/Desktop/Proyectos%20AUDITOR/productos_magento/config.py) | Carga unificada de parámetros desde `.env` o `st.secrets`. |
-| [`sync_cli.py`](file:///c:/Users/NOTEBOOK-%20CRISTHIAN/Desktop/Proyectos%20AUDITOR/productos_magento/sync_cli.py) | Ejecución desatendida por línea de comandos para tareas programadas (Task Scheduler). |
-| [`run_app.bat`](file:///c:/Users/NOTEBOOK-%20CRISTHIAN/Desktop/Proyectos%20AUDITOR/productos_magento/run_app.bat) | Lanzador con doble clic para Windows. |
+| [`app.py`](app.py) | Interfaz visual en Streamlit con métricas, descripciones `(?)`, filtros y botones de subida/descarga. |
+| [`magento_client.py`](magento_client.py) | Cliente HTTP con concurrencia controlada (`ThreadPoolExecutor`) y paginación para `/products` y `/inventory/source-items`. |
+| [`data_processor.py`](data_processor.py) | Motor de cruce en memoria, ajuste de horario UTC-3, cálculo de `Habilitado_para_Venta` y persistencia en `data/`. |
+| [`sheets_client.py`](sheets_client.py) | Conexión y subida masiva en bloque (`batchUpdate`) con Google Sheets (soporta credenciales locales y de Streamlit Cloud). |
+| [`config.py`](config.py) | Carga unificada de parámetros desde `.env` o `st.secrets`. |
+| [`sync_cli.py`](sync_cli.py) | Ejecución desatendida por línea de comandos para tareas programadas (Task Scheduler). |
+| [`run_app.bat`](run_app.bat) | Lanzador con doble clic para Windows. |
